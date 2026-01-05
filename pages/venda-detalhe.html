@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Venda - Sistema de Compras</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body class="bg-gray-100">
+    <div id="navbar"></div>
+    <div id="sidebar-container"></div>
+
+    <main class="lg:ml-64 pt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <a href="#" id="btn-voltar" class="text-green-600 hover:text-green-800 mb-4 inline-block">← Voltar</a>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 id="venda-numero" class="text-3xl font-bold text-gray-900">Venda</h2>
+                        <p id="venda-status" class="text-gray-600 mt-1"></p>
+                    </div>
+                    <div id="acoes-venda" class="space-x-2"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Informações da Venda -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Itens -->
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="px-6 py-4 border-b flex justify-between items-center">
+                            <h3 class="text-lg font-semibold">Itens da Venda</h3>
+                            <button id="btn-add-item" onclick="openModal('modal-item')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+                                + Adicionar Item
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Produto</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qtd</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Preço Un.</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itens-tbody">
+                                    <tr><td colspan="5" class="px-4 py-4 text-center text-gray-500 text-sm">Nenhum item adicionado</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="bg-white rounded-lg shadow p-6" id="observacoes-card">
+                        <h3 class="text-lg font-semibold mb-2">Observações</h3>
+                        <p id="venda-observacoes" class="text-gray-600 text-sm"></p>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <!-- Resumo -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">Resumo</h3>
+                        <dl class="space-y-3">
+                            <div class="flex justify-between">
+                                <dt class="text-gray-600">Total:</dt>
+                                <dd id="venda-total" class="font-bold text-2xl text-green-600">R$ 0,00</dd>
+                            </div>
+                            <div id="pagamento-info" class="hidden pt-3 border-t space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <dt class="text-gray-600">Valor Pago:</dt>
+                                    <dd id="venda-valor-pago" class="font-medium text-green-600">R$ 0,00</dd>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <dt class="text-gray-600">Pendente:</dt>
+                                    <dd id="venda-valor-pendente" class="font-medium text-orange-600">R$ 0,00</dd>
+                                </div>
+                                <div class="flex justify-between pt-2 border-t">
+                                    <dt class="text-gray-600 text-xs uppercase">Status Pagamento:</dt>
+                                    <dd id="venda-pagamento-status" class="font-semibold"></dd>
+                                </div>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <!-- Informações -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">Informações</h3>
+                        <dl class="space-y-3 text-sm">
+                            <div>
+                                <dt class="text-gray-500 text-xs uppercase">Vendedor</dt>
+                                <dd id="venda-vendedor" class="font-medium mt-1"></dd>
+                            </div>
+                            <div>
+                                <dt class="text-gray-500 text-xs uppercase">Cliente</dt>
+                                <dd id="venda-cliente" class="font-medium mt-1"></dd>
+                            </div>
+                            <div>
+                                <dt class="text-gray-500 text-xs uppercase">Data</dt>
+                                <dd id="venda-data" class="font-medium mt-1"></dd>
+                            </div>
+                            <div id="aprovador-info" class="hidden">
+                                <dt class="text-gray-500 text-xs uppercase">Aprovador</dt>
+                                <dd id="venda-aprovador" class="font-medium mt-1"></dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Cancelar Venda -->
+    <div id="modal-cancelar" class="modal-backdrop hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Cancelar Venda</h3>
+                <button onclick="closeModal('modal-cancelar')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="px-6 py-4">
+                <p class="text-gray-600 mb-6">Como deseja cancelar esta venda?</p>
+                <div class="space-y-3">
+                    <button onclick="cancelarVendaHandler('CANCELADO')" class="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 text-left">
+                        <div class="font-semibold">❌ Cancelar Definitivo</div>
+                        <div class="text-sm opacity-90">A venda será cancelada e os itens retornarão ao estoque</div>
+                    </button>
+                    <button onclick="cancelarVendaHandler('RASCUNHO')" class="w-full px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-left">
+                        <div class="font-semibold">🔄 Cancelar e Reabrir</div>
+                        <div class="text-sm opacity-90">A venda voltará para rascunho para edição</div>
+                    </button>
+                </div>
+                <button onclick="closeModal('modal-cancelar')" class="w-full mt-4 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Voltar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Item -->
+    <div id="modal-editar-item" class="modal-backdrop hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Editar Item</h3>
+                <button onclick="closeModal('modal-editar-item')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="px-6 py-4">
+                <form id="form-editar-item">
+                    <input type="hidden" id="editar-item-id">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Produto</label>
+                        <input type="text" id="editar-item-nome" readonly class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                    </div>
+
+                    <div id="editar-estoque-info" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-blue-800">Estoque Disponível:</span>
+                            <span id="editar-estoque-disponivel" class="font-bold text-blue-900">0 UN</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantidade*</label>
+                        <input type="number" id="editar-item-quantidade" step="1" min="1" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <p id="editar-quantidade-aviso" class="text-xs text-red-600 mt-1 hidden">⚠️ Quantidade excede o estoque disponível!</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Preço Unitário*</label>
+                        <input type="number" id="editar-item-preco" step="0.01" min="0.01" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Subtotal:</span>
+                            <span id="editar-item-subtotal" class="font-bold text-gray-900">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeModal('modal-editar-item')" 
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Item -->
+    <div id="modal-item" class="modal-backdrop hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center px-6 py-4 border-b sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-semibold text-gray-900">Adicionar Itens</h3>
+                <button onclick="closeModal('modal-item')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="px-6 py-4">
+                <!-- Seleção de Marca e Produto -->
+                <div class="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Marca*</label>
+                        <select id="item-marca" class="w-full px-4 py-2 border border-gray-300 rounded-lg" onchange="carregarProdutosPorMarca()">
+                            <option value="">Selecione a marca...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Produto*</label>
+                        <select id="item-produto" class="w-full px-4 py-2 border border-gray-300 rounded-lg" onchange="carregarSaboresProduto()" disabled>
+                            <option value="">Selecione o produto...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Lista de Sabores para Venda -->
+                <div id="area-adicionar-sabor" class="hidden">
+                    <h4 class="font-semibold text-gray-900 mb-3">Sabores do Produto</h4>
+                    <p class="text-sm text-gray-600 mb-3">Informe a quantidade e preço para os sabores que deseja vender:</p>
+                    
+                    <div class="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-2 text-left w-1/3">Sabor</th>
+                                    <th class="px-3 py-2 text-left">Estoque Atual</th>
+                                    <th class="px-3 py-2 text-left">Quantidade</th>
+                                    <th class="px-3 py-2 text-left">Preço Un.</th>
+                                    <th class="px-3 py-2 text-left">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-sabores-lista"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
+                        <span class="text-sm text-green-800">Total da Venda:</span>
+                        <span id="total-venda" class="font-bold text-xl text-green-900">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+                    <button type="button" onclick="cancelarEFecharModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                    <button type="button" onclick="salvarTodosSabores()" id="btn-salvar-todos" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hidden">Salvar Venda</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Rejeitar -->
+    <div id="modal-rejeitar" class="modal-backdrop hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Rejeitar Venda</h3>
+                <button onclick="closeModal('modal-rejeitar')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form id="form-rejeitar" class="px-6 py-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Motivo da Rejeição*</label>
+                    <textarea id="motivo-rejeicao" required rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Descreva o motivo..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeModal('modal-rejeitar')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Rejeitar Venda</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Pagamento -->
+    <div id="modal-pagamento" class="modal-backdrop hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Registrar Pagamento</h3>
+                <button onclick="closeModal('modal-pagamento')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form id="form-pagamento" class="px-6 py-4">
+                <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-sm text-gray-600">Total da Venda:</span>
+                        <span id="pagamento-total" class="font-bold text-lg">R$ 0,00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Já Pago:</span>
+                        <span id="pagamento-ja-pago" class="font-medium text-green-600">R$ 0,00</span>
+                    </div>
+                    <div class="flex justify-between mt-2 pt-2 border-t">
+                        <span class="text-sm font-medium text-gray-700">Pendente:</span>
+                        <span id="pagamento-pendente" class="font-bold text-lg text-orange-600">R$ 0,00</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Valor Recebido*</label>
+                        <input type="number" step="0.01" id="valor-pagamento" required min="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="0.00" oninput="atualizarRestante()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pagamento</label>
+                        <select id="forma-pagamento" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="DINHEIRO">Dinheiro</option>
+                            <option value="PIX">PIX</option>
+                            <option value="CARTAO_CREDITO">Cartão de Crédito</option>
+                            <option value="CARTAO_DEBITO">Cartão de Débito</option>
+                            <option value="TRANSFERENCIA">Transferência</option>
+                            <option value="OUTRO">Outro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Observação</label>
+                        <textarea id="obs-pagamento" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Observações sobre o pagamento..."></textarea>
+                    </div>
+                    <div id="info-restante" class="p-3 bg-blue-50 border border-blue-200 rounded-lg hidden">
+                        <p class="text-sm text-blue-800">Restará pendente: <span id="valor-restante" class="font-bold">R$ 0,00</span></p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeModal('modal-pagamento')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Registrar Pagamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg"><div class="spinner mx-auto"></div><p class="mt-4 text-gray-700">Carregando...</p></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/services/pedidos.js"></script>
+    <script src="../js/services/produtos.js"></script>
+    <script src="../js/services/impressao.js"></script>
+    <script src="../js/services/whatsapp.js"></script>
+    <script src="../components/navbar.js"></script>
+    <script src="../components/sidebar.js"></script>
+    <script src="../components/modal.js"></script>
+    
+    <script>
+        let vendaId = null;
+        let venda = null;
+        let itens = [];
+        let produtos = [];
+        let currentUser = null;
+        let empresaConfig = null;
+        let saboresTemporarios = []; // Lista temporária de sabores antes de salvar
+        let produtoAtual = null; // Produto selecionado no modal
+
+        (async () => {
+            await checkAuth();
+            currentUser = await getCurrentUser();
+            
+            // Carregar configurações da empresa
+            empresaConfig = await getEmpresaConfig();
+            
+            document.getElementById('navbar').innerHTML = createNavbar();
+            document.getElementById('sidebar-container').innerHTML = createSidebar();
+            await initNavbar();
+            await initSidebar();
+            
+            // Obter ID da venda
+            const params = new URLSearchParams(window.location.search);
+            vendaId = params.get('id');
+            const origem = params.get('origem');
+            
+            // Configurar página de retorno
+            window.voltarParaLista = function() {
+                if (origem === 'pendentes') {
+                    window.location.href = '/pages/vendas-pendentes.html';
+                } else {
+                    window.location.href = '/pages/vendas.html';
+                }
+            };
+            
+            // Configurar botão voltar
+            document.getElementById('btn-voltar').onclick = function(e) {
+                e.preventDefault();
+                voltarParaLista();
+            };
+            
+            if (!vendaId) {
+                showToast('Venda não encontrada', 'error');
+                setTimeout(() => voltarParaLista(), 2000);
+                return;
+            }
+            
+            await loadVenda();
+            await loadMarcasSelect();
+        })();
+
+        // Carregar marcas no select
+        async function loadMarcasSelect() {
+            const marcas = await getMarcas();
+            const selectMarca = document.getElementById('item-marca');
+            selectMarca.innerHTML = '<option value="">Selecione a marca...</option>';
+            marcas.forEach(marca => {
+                const option = document.createElement('option');
+                option.value = marca;
+                option.textContent = marca;
+                selectMarca.appendChild(option);
+            });
+        }
+
+        // Carregar produtos ao selecionar marca
+        async function carregarProdutosPorMarca() {
+            const marca = document.getElementById('item-marca').value;
+            const selectProduto = document.getElementById('item-produto');
+            const areaSabores = document.getElementById('area-adicionar-sabor');
+            
+            console.log('Marca selecionada:', marca);
+            
+            // Resetar select de produto
+            selectProduto.innerHTML = '<option value="">Selecione o produto...</option>';
+            
+            // Ocultar área de sabores e limpar tabela
+            if (areaSabores) {
+                areaSabores.classList.add('hidden');
+                const tbody = document.getElementById('tbody-sabores-lista');
+                if (tbody) tbody.innerHTML = '';
+            }
+            
+            if (!marca) {
+                selectProduto.disabled = true;
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                const produtos = await getProdutosPorMarca(marca);
+                console.log('Produtos encontrados:', produtos);
+                
+                if (produtos.length === 0) {
+                    showToast('Nenhum produto encontrado para esta marca', 'warning');
+                    selectProduto.disabled = true;
+                    return;
+                }
+                
+                produtos.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.nome}`;
+                    option.dataset.preco = p.preco_venda || p.preco || 0;
+                    selectProduto.appendChild(option);
+                });
+                
+                selectProduto.disabled = false;
+                console.log('Select produto habilitado');
+            } catch (error) {
+                console.error('Erro ao carregar produtos:', error);
+                showToast('Erro ao carregar produtos', 'error');
+                selectProduto.disabled = true;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Carregar sabores ao selecionar produto
+        async function carregarSaboresProduto() {
+            const produtoId = document.getElementById('item-produto').value;
+            const areaAdicionar = document.getElementById('area-adicionar-sabor');
+            
+            if (!produtoId) {
+                areaAdicionar.classList.add('hidden');
+                return;
+            }
+            
+            // Pegar dados do produto selecionado
+            const selectProduto = document.getElementById('item-produto');
+            const option = selectProduto.options[selectProduto.selectedIndex];
+            produtoAtual = {
+                id: produtoId,
+                nome: option.textContent,
+                preco: parseFloat(option.dataset.preco || 0)
+            };
+            
+            const sabores = await getSaboresProduto(produtoId);
+            if (sabores.length === 0) {
+                showToast('Este produto não possui sabores cadastrados', 'warning');
+                areaAdicionar.classList.add('hidden');
+                return;
+            }
+            
+            // Ordenar sabores alfabeticamente
+            sabores.sort((a, b) => a.sabor.localeCompare(b.sabor));
+            
+            // Renderizar lista de sabores
+            await renderListaSabores(sabores);
+            
+            // Mostrar área e botão de salvar
+            areaAdicionar.classList.remove('hidden');
+            document.getElementById('btn-salvar-todos').classList.remove('hidden');
+        }
+
+        // Renderizar lista de sabores com campos de quantidade
+        async function renderListaSabores(sabores) {
+            const tbody = document.getElementById('tbody-sabores-lista');
+            
+            // Buscar itens já adicionados neste pedido para descontar do estoque disponível
+            const itensJaAdicionados = {};
+            for (const item of itens) {
+                if (item.sabor_id) {
+                    itensJaAdicionados[item.sabor_id] = (itensJaAdicionados[item.sabor_id] || 0) + item.quantidade;
+                }
+            }
+            
+            // Calcular estoque disponível considerando itens já adicionados
+            const saboresComEstoqueDisponivel = sabores.map(s => {
+                const quantidadeJaUsada = itensJaAdicionados[s.id] || 0;
+                const estoqueDisponivel = s.quantidade - quantidadeJaUsada;
+                return {
+                    ...s,
+                    estoqueDisponivel: Math.max(0, estoqueDisponivel),
+                    estoqueOriginal: s.quantidade
+                };
+            });
+            
+            // Filtrar apenas sabores com estoque disponível > 0
+            const saboresComEstoque = saboresComEstoqueDisponivel.filter(s => s.estoqueDisponivel > 0);
+            
+            if (saboresComEstoque.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Nenhum sabor com estoque disponível</td></tr>';
+                document.getElementById('btn-salvar-todos').classList.add('hidden');
+                return;
+            }
+            
+            tbody.innerHTML = saboresComEstoque.map(s => `
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-3 py-3 font-medium">${s.sabor}</td>
+                    <td class="px-3 py-3 text-gray-600">
+                        <span class="font-semibold">${s.estoqueDisponivel} UN</span>
+                        <span class="text-xs text-gray-500 block">Total: ${s.estoqueOriginal} UN</span>
+                    </td>
+                    <td class="px-3 py-3">
+                        <input type="number" 
+                            step="1" 
+                            min="0" 
+                            max="${s.estoqueDisponivel}"
+                            value="0"
+                            data-sabor-id="${s.id}"
+                            data-sabor-nome="${s.sabor}"
+                            data-estoque="${s.estoqueDisponivel}"
+                            class="sabor-quantidade w-24 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500" 
+                            placeholder="0"
+                            oninput="validarEstoqueVenda(this); calcularTotalVenda()">
+                    </td>
+                    <td class="px-3 py-3">
+                        <input type="number" 
+                            step="0.01" 
+                            min="0.01" 
+                            value="${produtoAtual.preco.toFixed(2)}"
+                            data-sabor-id="${s.id}"
+                            class="sabor-preco w-24 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500" 
+                            placeholder="0.00"
+                            oninput="calcularTotalVenda()">
+                    </td>
+                    <td class="px-3 py-3">
+                        <span class="sabor-subtotal font-medium text-gray-900" data-sabor-id="${s.id}">R$ 0,00</span>
+                    </td>
+                </tr>
+            `).join('');
+            
+            calcularTotalVenda();
+        }
+
+        // Validar estoque disponível para venda
+        function validarEstoqueVenda(input) {
+            const quantidade = parseFloat(input.value) || 0;
+            const estoqueDisponivel = parseFloat(input.dataset.estoque || 0);
+            
+            if (quantidade > estoqueDisponivel) {
+                input.value = estoqueDisponivel;
+                showToast(`Estoque insuficiente! Disponível: ${estoqueDisponivel} UN`, 'warning');
+            }
+        }
+
+        // Calcular total da venda
+        function calcularTotalVenda() {
+            let total = 0;
+            
+            const quantidadeInputs = document.querySelectorAll('.sabor-quantidade');
+            quantidadeInputs.forEach(input => {
+                const saborId = input.dataset.saborId;
+                const quantidade = parseFloat(input.value) || 0;
+                const precoInput = document.querySelector(`.sabor-preco[data-sabor-id="${saborId}"]`);
+                const preco = parseFloat(precoInput.value) || 0;
+                const subtotal = quantidade * preco;
+                
+                // Atualizar subtotal do sabor
+                const subtotalSpan = document.querySelector(`.sabor-subtotal[data-sabor-id="${saborId}"]`);
+                subtotalSpan.textContent = formatCurrency(subtotal);
+                
+                total += subtotal;
+            });
+            
+            document.getElementById('total-venda').textContent = formatCurrency(total);
+        }
+
+        // Atualizar estoque quando selecionar sabor (não usado mais)
+        function atualizarEstoqueSabor() {
+            // Função mantida para compatibilidade mas não é mais usada
+        }
+
+        // Adicionar sabor na lista temporária (não usado mais)
+        function adicionarSaborNaLista() {
+            // Função mantida para compatibilidade mas não é mais usada
+        }
+        
+        // Renderizar lista de sabores temporários (não usado mais)
+        function renderSaboresTemporarios() {
+            // Função mantida para compatibilidade mas não é mais usada
+        }
+        
+        // Remover sabor da lista temporária (não usado mais)
+        function removerSaborTemporario(index) {
+            // Função mantida para compatibilidade mas não é mais usada
+        }
+        
+        // Salvar todos os sabores de uma vez
+        async function salvarTodosSabores() {
+            showLoading(true);
+            try {
+                // Coletar todos os sabores com quantidade > 0
+                const quantidadeInputs = document.querySelectorAll('.sabor-quantidade');
+                const saboresParaSalvar = [];
+                
+                quantidadeInputs.forEach(input => {
+                    const quantidade = parseFloat(input.value) || 0;
+                    if (quantidade > 0) {
+                        const saborId = input.dataset.saborId;
+                        const saborNome = input.dataset.saborNome;
+                        const estoqueDisponivel = parseFloat(input.dataset.estoque || 0);
+                        const precoInput = document.querySelector(`.sabor-preco[data-sabor-id="${saborId}"]`);
+                        const preco = parseFloat(precoInput.value) || 0;
+                        
+                        if (preco > 0) {
+                            // Validar estoque novamente antes de salvar
+                            if (quantidade > estoqueDisponivel) {
+                                throw new Error(`Estoque insuficiente para ${saborNome}! Disponível: ${estoqueDisponivel}`);
+                            }
+                            
+                            saboresParaSalvar.push({
+                                sabor_id: saborId,
+                                sabor_nome: saborNome,
+                                quantidade: quantidade,
+                                preco_unitario: preco
+                            });
+                        }
+                    }
+                });
+                
+                if (saboresParaSalvar.length === 0) {
+                    showToast('Informe a quantidade e preço para pelo menos um sabor', 'warning');
+                    showLoading(false);
+                    return;
+                }
+                
+                // Salvar cada sabor
+                for (const sabor of saboresParaSalvar) {
+                    const itemData = {
+                        produto_id: produtoAtual.id,
+                        sabor_id: sabor.sabor_id,
+                        quantidade: sabor.quantidade,
+                        preco_unitario: sabor.preco_unitario
+                    };
+                    
+                    const result = await addItemPedido(vendaId, itemData);
+                    if (!result) {
+                        throw new Error('Erro ao adicionar item');
+                    }
+                }
+                
+                showToast(`${saboresParaSalvar.length} sabor(es) adicionado(s) com sucesso!`, 'success');
+                
+                // Resetar modal
+                cancelarEFecharModal();
+                
+                // Recarregar venda
+                await loadVenda();
+            } catch (error) {
+                handleError(error, 'Erro ao salvar sabores');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Cancelar e fechar modal
+        function cancelarEFecharModal() {
+            saboresTemporarios = [];
+            produtoAtual = null;
+            document.getElementById('item-marca').value = '';
+            document.getElementById('item-produto').value = '';
+            document.getElementById('item-produto').disabled = true;
+            document.getElementById('item-produto').innerHTML = '<option value="">Selecione o produto...</option>';
+            document.getElementById('tbody-sabores-lista').innerHTML = '';
+            document.getElementById('total-venda').textContent = 'R$ 0,00';
+            document.getElementById('area-adicionar-sabor').classList.add('hidden');
+            document.getElementById('btn-salvar-todos').classList.add('hidden');
+            closeModal('modal-item');
+        }
+
+        // Validar estoque disponível (não usado mais)
+        function validarEstoqueDisponivel() {
+            // Função mantida para compatibilidade mas não é mais usada
+        }
+
+        async function loadVenda() {
+            venda = await getPedido(vendaId);
+            if (!venda) {
+                showToast('Venda não encontrada', 'error');
+                setTimeout(() => window.location.href = '/pages/vendas.html', 2000);
+                return;
+            }
+            
+            itens = await getItensPedido(vendaId);
+            renderVenda();
+            renderItens();
+            renderAcoes();
+        }
+
+        function renderVenda() {
+            document.getElementById('venda-numero').textContent = venda.numero;
+            document.getElementById('venda-status').textContent = getStatusText(venda.status);
+            
+            // Calcular total baseado nos itens carregados para garantir precisão
+            const totalCalculado = itens.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+            document.getElementById('venda-total').textContent = formatCurrency(totalCalculado);
+            
+            document.getElementById('venda-vendedor').textContent = venda.solicitante?.full_name || '-';
+            document.getElementById('venda-cliente').textContent = venda.cliente?.nome || '-';
+            document.getElementById('venda-data').textContent = formatDate(venda.created_at);
+            
+            // Mostrar informações de pagamento se a venda estiver finalizada
+            if (venda.status === 'FINALIZADO') {
+                document.getElementById('pagamento-info').classList.remove('hidden');
+                document.getElementById('venda-valor-pago').textContent = formatCurrency(venda.valor_pago || 0);
+                document.getElementById('venda-valor-pendente').textContent = formatCurrency(venda.valor_pendente || 0);
+                
+                const statusPagamento = document.getElementById('venda-pagamento-status');
+                const status = venda.pagamento_status || 'PENDENTE';
+                const statusTexts = {
+                    'PENDENTE': { text: 'Pendente', color: 'text-red-600' },
+                    'PARCIAL': { text: 'Parcial', color: 'text-orange-600' },
+                    'PAGO': { text: 'Pago', color: 'text-green-600' }
+                };
+                statusPagamento.textContent = statusTexts[status].text;
+                statusPagamento.className = `font-semibold ${statusTexts[status].color}`;
+            }
+            
+            if (venda.observacoes) {
+                document.getElementById('venda-observacoes').textContent = venda.observacoes;
+            } else {
+                document.getElementById('observacoes-card').style.display = 'none';
+            }
+            
+            if (venda.aprovador) {
+                document.getElementById('aprovador-info').classList.remove('hidden');
+                document.getElementById('venda-aprovador').textContent = venda.aprovador.full_name;
+            }
+        }
+
+        function renderItens() {
+            const tbody = document.getElementById('itens-tbody');
+            
+            if (itens.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-gray-500 text-sm">Nenhum item adicionado</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = itens.map(item => {
+                const produtoNome = item.produto?.nome || 'N/A';
+                const sabor = item.sabor?.sabor ? ` - ${item.sabor.sabor}` : '';
+                return `
+                    <tr class="border-t">
+                        <td class="px-4 py-3">
+                            <div class="font-medium">${produtoNome}</div>
+                            ${sabor ? `<div class="text-xs text-gray-500">${sabor}</div>` : ''}
+                            <div class="text-xs text-gray-500">${item.produto?.codigo || ''}</div>
+                        </td>
+                        <td class="px-4 py-3">${item.quantidade} ${item.produto?.unidade || ''}</td>
+                        <td class="px-4 py-3">${formatCurrency(item.preco_unitario)}</td>
+                        <td class="px-4 py-3 font-medium">${formatCurrency(item.subtotal)}</td>
+                        <td class="px-4 py-3">
+                            ${venda.status === 'RASCUNHO' ? `
+                                <button onclick="editarItem('${item.id}', ${item.quantidade}, ${item.preco_unitario})" class="text-blue-600 hover:text-blue-800 text-sm mr-2" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="removerItem('${item.id}')" class="text-red-600 hover:text-red-800 text-sm" title="Remover">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderAcoes() {
+            const acoesDiv = document.getElementById('acoes-venda');
+            let botoes = [];
+            
+            // Botão de impressão sempre visível
+            botoes.push('<button onclick="imprimirPedidoVenda(\'' + vendaId + '\')" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">🖨️ Imprimir</button>');
+            
+            // DEBUG: Verificar configurações WhatsApp
+            console.log('=== DEBUG WHATSAPP ===');
+            console.log('empresaConfig:', empresaConfig);
+            console.log('whatsapp_api_provider:', empresaConfig?.whatsapp_api_provider);
+            console.log('whatsapp_api_url:', empresaConfig?.whatsapp_api_url);
+            console.log('whatsapp_api_key:', empresaConfig?.whatsapp_api_key);
+            console.log('venda.status:', venda.status);
+            console.log('venda.cliente:', venda.cliente);
+            console.log('venda.cliente?.whatsapp:', venda.cliente?.whatsapp);
+            
+            // Botão de envio por WhatsApp
+            const whatsappConfigurado = empresaConfig?.whatsapp_api_provider && empresaConfig?.whatsapp_api_url && empresaConfig?.whatsapp_api_key;
+            const statusPermitido = ['APROVADO', 'FINALIZADO'].includes(venda.status);
+            const clienteTemWhatsApp = venda.cliente?.whatsapp;
+            
+            console.log('whatsappConfigurado:', whatsappConfigurado);
+            console.log('statusPermitido:', statusPermitido);
+            console.log('clienteTemWhatsApp:', clienteTemWhatsApp);
+            console.log('=== FIM DEBUG ===');
+            
+            if (whatsappConfigurado && statusPermitido && clienteTemWhatsApp) {
+                botoes.push('<button onclick="enviarPDFWhatsAppHandler()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">📱 Enviar WhatsApp</button>');
+            }
+            
+            const podeEditar = venda.status === 'RASCUNHO' && venda.solicitante.id === currentUser.id;
+            const podeAprovar = venda.status === 'ENVIADO' && ['APROVADOR', 'ADMIN'].includes(currentUser.role);
+            const podeFinalizar = venda.status === 'APROVADO' && currentUser.role === 'ADMIN';
+            
+            if (podeEditar) {
+                document.getElementById('btn-add-item').style.display = 'block';
+                botoes.push('<button onclick="enviarParaAprovacao()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Enviar para Aprovação</button>');
+                botoes.push('<button onclick="excluirVenda()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">🗑️ Excluir Venda</button>');
+            } else {
+                document.getElementById('btn-add-item').style.display = 'none';
+            }
+            
+            if (podeAprovar) {
+                botoes.push('<button onclick="aprovarVenda()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Aprovar</button>');
+                botoes.push('<button onclick="openModal(\'modal-rejeitar\')" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Rejeitar</button>');
+            }
+            
+            if (podeFinalizar) {
+                botoes.push('<button onclick="finalizarVenda()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Finalizar Venda</button>');
+            }
+            
+            // Botão para registrar pagamento (vendas finalizadas com saldo pendente)
+            if (venda.status === 'FINALIZADO' && venda.pagamento_status !== 'PAGO' && ['ADMIN', 'VENDEDOR'].includes(currentUser.role)) {
+                const pendente = (venda.total || 0) - (venda.valor_pago || 0);
+                if (pendente > 0) {
+                    botoes.push(`<button onclick="abrirModalPagamento()" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">💰 Registrar Pagamento</button>`);
+                }
+            }
+            
+            // Botão de cancelar disponível para ADMIN em vendas APROVADAS ou FINALIZADAS
+            if ((venda.status === 'APROVADO' || venda.status === 'FINALIZADO') && currentUser.role === 'ADMIN') {
+                botoes.push('<button onclick="openModal(\'modal-cancelar\')" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">🚫 Cancelar Venda</button>');
+            }
+            
+            acoesDiv.innerHTML = botoes.join('');
+        }
+
+        window.removerItem = async function(itemId) {
+            if (confirm('Deseja remover este item?')) {
+                const success = await deleteItemPedido(itemId);
+                if (success) await loadVenda();
+            }
+        };
+
+        window.editarItem = async function(itemId, quantidadeAtual, precoAtual) {
+            // Buscar informações completas do item
+            const item = itens.find(i => i.id === itemId);
+            if (!item) {
+                showToast('Item não encontrado', 'error');
+                return;
+            }
+
+            // Preencher o modal
+            document.getElementById('editar-item-id').value = itemId;
+            
+            const produtoNome = item.produto?.nome || 'N/A';
+            const sabor = item.sabor?.sabor ? ` - ${item.sabor.sabor}` : '';
+            document.getElementById('editar-item-nome').value = produtoNome + sabor;
+            
+            const inputQuantidade = document.getElementById('editar-item-quantidade');
+            inputQuantidade.value = quantidadeAtual;
+            
+            // Buscar estoque atual do sabor
+            if (item.sabor_id) {
+                try {
+                    const { data: saborAtual } = await supabase
+                        .from('produto_sabores')
+                        .select('quantidade')
+                        .eq('id', item.sabor_id)
+                        .single();
+                    
+                    if (saborAtual) {
+                        // Calcular quanto deste sabor já está sendo usado em outros itens do pedido
+                        let quantidadeJaUsadaEmOutrosItens = 0;
+                        for (const outroItem of itens) {
+                            if (outroItem.sabor_id === item.sabor_id && outroItem.id !== itemId) {
+                                quantidadeJaUsadaEmOutrosItens += outroItem.quantidade;
+                            }
+                        }
+                        
+                        // Estoque disponível = estoque atual - quantidade usada em outros itens
+                        // (não contamos o item atual pois ele está sendo editado)
+                        const estoqueDisponivel = saborAtual.quantidade - quantidadeJaUsadaEmOutrosItens;
+                        inputQuantidade.max = estoqueDisponivel;
+                        inputQuantidade.dataset.estoqueMax = estoqueDisponivel;
+                        inputQuantidade.dataset.quantidadeOriginal = quantidadeAtual;
+                        inputQuantidade.dataset.saborId = item.sabor_id;
+                        
+                        // Mostrar informação de estoque disponível
+                        document.getElementById('editar-estoque-info').classList.remove('hidden');
+                        document.getElementById('editar-estoque-disponivel').textContent = `${estoqueDisponivel} UN`;
+                    }
+                } catch (error) {
+                    console.error('Erro ao buscar estoque:', error);
+                }
+            } else {
+                // Se não tem sabor_id, ocultar info de estoque
+                document.getElementById('editar-estoque-info').classList.add('hidden');
+            }
+            
+            document.getElementById('editar-item-preco').value = precoAtual;
+            
+            // Calcular e mostrar subtotal
+            atualizarSubtotalEdicao();
+            
+            // Abrir modal
+            openModal('modal-editar-item');
+        };
+
+        function atualizarSubtotalEdicao() {
+            const inputQuantidade = document.getElementById('editar-item-quantidade');
+            const quantidade = parseFloat(inputQuantidade.value) || 0;
+            const estoqueMax = parseFloat(inputQuantidade.dataset.estoqueMax);
+            const avisoElement = document.getElementById('editar-quantidade-aviso');
+            
+            // Validar estoque se houver limite configurado
+            if (estoqueMax && quantidade > estoqueMax) {
+                // Mostrar aviso visual
+                avisoElement.classList.remove('hidden');
+                inputQuantidade.classList.add('border-red-500', 'bg-red-50');
+                inputQuantidade.classList.remove('border-gray-300');
+            } else {
+                // Ocultar aviso e remover estilo de erro
+                avisoElement.classList.add('hidden');
+                inputQuantidade.classList.remove('border-red-500', 'bg-red-50');
+                inputQuantidade.classList.add('border-gray-300');
+            }
+            
+            const quantidadeFinal = parseFloat(inputQuantidade.value) || 0;
+            const preco = parseFloat(document.getElementById('editar-item-preco').value) || 0;
+            const subtotal = quantidadeFinal * preco;
+            document.getElementById('editar-item-subtotal').textContent = formatCurrency(subtotal);
+        }
+
+        // Event listeners para atualizar subtotal em tempo real
+        document.getElementById('editar-item-quantidade').addEventListener('input', atualizarSubtotalEdicao);
+        document.getElementById('editar-item-preco').addEventListener('input', atualizarSubtotalEdicao);
+
+        // Form de edição de item
+        document.getElementById('form-editar-item').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const itemId = document.getElementById('editar-item-id').value;
+            const inputQuantidade = document.getElementById('editar-item-quantidade');
+            const quantidade = parseFloat(inputQuantidade.value);
+            const preco = parseFloat(document.getElementById('editar-item-preco').value);
+
+            if (quantidade <= 0 || preco <= 0) {
+                showToast('Quantidade e preço devem ser maiores que zero', 'error');
+                return;
+            }
+
+            // Validar estoque novamente antes de salvar
+            const estoqueMax = parseFloat(inputQuantidade.dataset.estoqueMax);
+            if (estoqueMax && quantidade > estoqueMax) {
+                showToast(`Estoque insuficiente! Máximo disponível: ${estoqueMax} UN`, 'error');
+                return;
+            }
+
+            try {
+                showLoading(true);
+                
+                const { error } = await supabase
+                    .from('pedido_itens')
+                    .update({
+                        quantidade: quantidade,
+                        preco_unitario: preco,
+                        subtotal: quantidade * preco
+                    })
+                    .eq('id', itemId);
+
+                if (error) throw error;
+
+                showToast('Item atualizado com sucesso!', 'success');
+                closeModal('modal-editar-item');
+                await loadVenda();
+            } catch (error) {
+                console.error('Erro ao atualizar item:', error);
+                showToast('Erro ao atualizar item', 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        async function enviarParaAprovacao() {
+            if (itens.length === 0) {
+                showToast('Adicione pelo menos um item antes de enviar', 'error');
+                return;
+            }
+            if (confirm('Enviar venda para aprovação?')) {
+                const success = await enviarPedidoParaAprovacao(vendaId);
+                if (success) await loadVenda();
+            }
+        }
+
+        async function aprovarVenda() {
+            if (confirm('Aprovar esta venda?')) {
+                const success = await aprovarPedido(vendaId);
+                if (success) await loadVenda();
+            }
+        }
+
+        document.getElementById('form-rejeitar').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const motivo = document.getElementById('motivo-rejeicao').value;
+            const success = await rejeitarPedido(vendaId, motivo);
+            if (success) {
+                closeModal('modal-rejeitar');
+                await loadVenda();
+            }
+        });
+
+        async function finalizarVenda() {
+            if (confirm('Finalizar venda? O estoque será REDUZIDO automaticamente.')) {
+                const success = await finalizarPedido(vendaId);
+                if (success) {
+                    await loadVenda();
+                    // Abrir modal de pagamento
+                    abrirModalPagamento();
+                }
+            }
+        }
+
+        function abrirModalPagamento() {
+            document.getElementById('pagamento-total').textContent = formatCurrency(venda.total || 0);
+            document.getElementById('pagamento-ja-pago').textContent = formatCurrency(venda.valor_pago || 0);
+            const pendente = (venda.total || 0) - (venda.valor_pago || 0);
+            document.getElementById('pagamento-pendente').textContent = formatCurrency(pendente);
+            document.getElementById('valor-pagamento').value = pendente.toFixed(2);
+            document.getElementById('valor-pagamento').max = pendente.toFixed(2);
+            atualizarRestante();
+            openModal('modal-pagamento');
+        }
+
+        function atualizarRestante() {
+            const total = venda.total || 0;
+            const jaPago = venda.valor_pago || 0;
+            const pendente = total - jaPago;
+            const valorDigitado = parseFloat(document.getElementById('valor-pagamento').value) || 0;
+            const restante = pendente - valorDigitado;
+            
+            const infoRestante = document.getElementById('info-restante');
+            const valorRestante = document.getElementById('valor-restante');
+            
+            if (valorDigitado > 0 && valorDigitado < pendente) {
+                infoRestante.classList.remove('hidden');
+                valorRestante.textContent = formatCurrency(restante);
+            } else {
+                infoRestante.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('form-pagamento').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const valorPagamento = parseFloat(document.getElementById('valor-pagamento').value);
+            const formaPagamento = document.getElementById('forma-pagamento').value;
+            const observacao = document.getElementById('obs-pagamento').value;
+            
+            const total = venda.total || 0;
+            const jaPago = venda.valor_pago || 0;
+            const pendente = total - jaPago;
+            
+            if (valorPagamento > pendente) {
+                showToast('Valor informado é maior que o pendente', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            try {
+                const novoValorPago = jaPago + valorPagamento;
+                const novoValorPendente = total - novoValorPago;
+                const pagamentoCompleto = novoValorPendente <= 0;
+                
+                // Registrar pagamento
+                const { error: pagamentoError } = await supabase
+                    .from('pagamentos')
+                    .insert({
+                        pedido_id: vendaId,
+                        valor: valorPagamento,
+                        forma_pagamento: formaPagamento,
+                        observacao: observacao,
+                        usuario_id: currentUser.id
+                    });
+                
+                if (pagamentoError) throw pagamentoError;
+                
+                // Atualizar pedido
+                const updateData = {
+                    valor_pago: novoValorPago,
+                    valor_pendente: novoValorPendente,
+                    pagamento_status: pagamentoCompleto ? 'PAGO' : 'PARCIAL'
+                };
+                
+                if (pagamentoCompleto) {
+                    updateData.data_pagamento_completo = new Date().toISOString();
+                }
+                
+                const { error: pedidoError } = await supabase
+                    .from('pedidos')
+                    .update(updateData)
+                    .eq('id', vendaId);
+                
+                if (pedidoError) throw pedidoError;
+                
+                showToast(`Pagamento de ${formatCurrency(valorPagamento)} registrado com sucesso!`, 'success');
+                closeModal('modal-pagamento');
+                document.getElementById('form-pagamento').reset();
+                await loadVenda();
+                
+            } catch (error) {
+                handleError(error, 'Erro ao registrar pagamento');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        async function finalizarVenda() {
+            if (confirm('Finalizar venda? O estoque será REDUZIDO automaticamente.')) {
+                const success = await finalizarPedido(vendaId);
+                if (success) await loadVenda();
+            }
+        }
+
+        async function excluirVenda() {
+            if (!confirm('⚠️ Tem certeza que deseja EXCLUIR esta venda?\n\nEsta ação NÃO pode ser desfeita!')) {
+                return;
+            }
+            
+            const success = await deletePedido(vendaId);
+            if (success) {
+                // Redirecionar para lista de vendas
+                window.location.href = 'vendas.html';
+            }
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'RASCUNHO': 'Status: Rascunho',
+                'ENVIADO': 'Status: Aguardando Aprovação',
+                'APROVADO': 'Status: Aprovada',
+                'REJEITADO': 'Status: Rejeitada',
+                'FINALIZADO': 'Status: Finalizada',
+                'CANCELADO': 'Status: Cancelada'
+            };
+            return texts[status] || status;
+        }
+
+        async function cancelarVendaHandler(novoStatus) {
+            const mensagem = novoStatus === 'CANCELADO' 
+                ? 'Tem certeza que deseja CANCELAR DEFINITIVAMENTE esta venda? Os itens retornarão ao estoque.' 
+                : 'Tem certeza que deseja CANCELAR e REABRIR esta venda como rascunho?';
+            
+            if (!confirm(mensagem)) {
+                closeModal('modal-cancelar');
+                return;
+            }
+            
+            showLoading(true);
+            try {
+                // SEMPRE devolver ao estoque se a venda estiver FINALIZADA
+                if (venda.status === 'FINALIZADO') {
+                    const itensVenda = await getItensPedido(vendaId);
+                    
+                    for (const item of itensVenda) {
+                        if (item.sabor_id) {
+                            // Devolver ao estoque usando RPC
+                            const { error: estoqueError } = await supabase.rpc('atualizar_estoque_sabor', {
+                                p_sabor_id: item.sabor_id,
+                                p_quantidade: item.quantidade // POSITIVO para adicionar de volta
+                            });
+                            
+                            if (estoqueError) {
+                                console.error('Erro ao devolver ao estoque:', estoqueError);
+                                throw estoqueError;
+                            }
+                            
+                            // Registrar movimentação
+                            const { data: saborAtual } = await supabase
+                                .from('produto_sabores')
+                                .select('quantidade')
+                                .eq('id', item.sabor_id)
+                                .single();
+                            
+                            await supabase
+                                .from('estoque_movimentacoes')
+                                .insert({
+                                    produto_id: item.produto_id,
+                                    sabor_id: item.sabor_id,
+                                    tipo: 'ENTRADA',
+                                    quantidade: item.quantidade,
+                                    estoque_anterior: saborAtual.quantidade - item.quantidade,
+                                    estoque_novo: saborAtual.quantidade,
+                                    usuario_id: currentUser.id,
+                                    pedido_id: vendaId,
+                                    observacao: novoStatus === 'CANCELADO'
+                                        ? 'Devolução - Cancelamento definitivo de venda'
+                                        : 'Devolução - Reabertura de venda como rascunho'
+                                });
+                        }
+                    }
+                }
+                
+                const updateData = { status: novoStatus };
+                
+                // Se for cancelamento definitivo, registrar quem cancelou
+                if (novoStatus === 'CANCELADO') {
+                    updateData.aprovador_id = currentUser.id;
+                }
+                
+                const { error } = await supabase
+                    .from('pedidos')
+                    .update(updateData)
+                    .eq('id', vendaId);
+                
+                if (error) throw error;
+                
+                const msgSucesso = novoStatus === 'CANCELADO' 
+                    ? 'Venda cancelada definitivamente! Itens devolvidos ao estoque.' 
+                    : 'Venda cancelada e reaberta como rascunho!';
+                
+                showToast(msgSucesso, 'success');
+                closeModal('modal-cancelar');
+                await loadVenda();
+            } catch (error) {
+                handleError(error, 'Erro ao cancelar venda');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function enviarPDFWhatsAppHandler() {
+            try {
+                if (!venda.cliente?.whatsapp) {
+                    showToast('Cliente não possui WhatsApp cadastrado', 'error');
+                    return;
+                }
+
+                if (!confirm(`Enviar PDF da venda para ${venda.cliente.nome}?\n\nWhatsApp: ${venda.cliente.whatsapp}`)) {
+                    return;
+                }
+
+                await enviarPDFWhatsApp(vendaId, venda.cliente.whatsapp);
+            } catch (error) {
+                // Erro já tratado na função enviarPDFWhatsApp
+                console.error('Erro ao enviar WhatsApp:', error);
+            }
+        }
+    </script>
+</body>
+</html>
