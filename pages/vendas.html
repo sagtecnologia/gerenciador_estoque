@@ -31,10 +31,8 @@
                         <select id="filter-status" class="w-full px-4 py-2 border border-gray-300 rounded-lg" onchange="loadVendas()">
                             <option value="">Todos os status</option>
                             <option value="RASCUNHO">Rascunho</option>
-                            <option value="ENVIADO">Enviado</option>
-                            <option value="APROVADO">Aprovado</option>
-                            <option value="REJEITADO">Rejeitado</option>
                             <option value="FINALIZADO">Finalizado</option>
+                            <option value="CANCELADO">Cancelado</option>
                         </select>
                     </div>
                     <div>
@@ -293,10 +291,8 @@
         function getStatusBadge(status) {
             const badges = {
                 'RASCUNHO': '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Rascunho</span>',
-                'ENVIADO': '<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Enviado</span>',
-                'APROVADO': '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Aprovado</span>',
-                'REJEITADO': '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Rejeitado</span>',
-                'FINALIZADO': '<span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">Finalizado</span>'
+                'FINALIZADO': '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Finalizado</span>',
+                'CANCELADO': '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Cancelado</span>'
             };
             return badges[status] || status;
         }

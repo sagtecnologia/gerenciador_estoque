@@ -168,52 +168,30 @@
                 </button>
             </div>
             <div class="px-6 py-4">
-                <!-- Seleção de Marca e Produto -->
-                <div class="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Marca*</label>
-                        <select id="item-marca" class="w-full px-4 py-2 border border-gray-300 rounded-lg" onchange="carregarProdutosPorMarca()">
-                            <option value="">Selecione a marca...</option>
-                        </select>
-                    </div>
+                <!-- Seleção de Produto -->
+                <div class="mb-4 pb-4 border-b">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Produto*</label>
-                        <select id="item-produto" class="w-full px-4 py-2 border border-gray-300 rounded-lg" onchange="carregarSaboresProduto()" disabled>
+                        <select id="item-produto" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                             <option value="">Selecione o produto...</option>
                         </select>
                     </div>
-                </div>
-
-                <!-- Lista de Sabores para Compra -->
-                <div id="area-adicionar-sabor" class="hidden">
-                    <h4 class="font-semibold text-gray-900 mb-3">Sabores do Produto</h4>
-                    <p class="text-sm text-gray-600 mb-3">Informe a quantidade e preço para os sabores que deseja comprar:</p>
-                    
-                    <div class="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
-                        <table class="min-w-full text-sm">
-                            <thead class="bg-gray-100 sticky top-0">
-                                <tr>
-                                    <th class="px-3 py-2 text-left w-1/3">Sabor</th>
-                                    <th class="px-3 py-2 text-left">Estoque Atual</th>
-                                    <th class="px-3 py-2 text-left">Quantidade</th>
-                                    <th class="px-3 py-2 text-left">Preço Un.</th>
-                                    <th class="px-3 py-2 text-left">Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-sabores-lista"></tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center">
-                        <span class="text-sm text-blue-800">Total da Compra:</span>
-                        <span id="total-compra" class="font-bold text-xl text-blue-900">R$ 0,00</span>
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Quantidade*</label>
+                            <input type="number" id="item-quantidade" min="0.01" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Preço Unitário (R$)*</label>
+                            <input type="number" id="item-preco" min="0.01" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="0.00">
+                        </div>
                     </div>
                 </div>
 
                 <!-- Botões de Ação -->
                 <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
                     <button type="button" onclick="cancelarEFecharModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                    <button type="button" onclick="salvarTodosSabores()" id="btn-salvar-todos" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hidden">Salvar Compra</button>
+                    <button type="button" onclick="salvarItem()" id="btn-salvar-item" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar Item</button>
                 </div>
             </div>
         </div>
@@ -258,270 +236,85 @@
             }
 
             await loadPedido();
-            await loadMarcasSelect();
+            await loadProdutosSelect();
         })();
 
-        // Carregar marcas no select
-        async function loadMarcasSelect() {
-            const marcas = await getMarcas();
-            const selectMarca = document.getElementById('item-marca');
-            selectMarca.innerHTML = '<option value="">Selecione a marca...</option>';
-            marcas.forEach(marca => {
+        // Carregar produtos no select
+        async function loadProdutosSelect() {
+            const produtos = await listProdutos();
+            const selectProduto = document.getElementById('item-produto');
+            selectProduto.innerHTML = '<option value="">Selecione o produto...</option>';
+            produtos.forEach(produto => {
                 const option = document.createElement('option');
-                option.value = marca;
-                option.textContent = marca;
-                selectMarca.appendChild(option);
+                option.value = produto.id;
+                option.textContent = `${produto.codigo} - ${produto.nome}`;
+                option.dataset.preco = produto.preco_compra || 0;
+                selectProduto.appendChild(option);
             });
         }
 
-        // Carregar produtos ao selecionar marca
-        async function carregarProdutosPorMarca() {
-            const marca = document.getElementById('item-marca').value;
-            const selectProduto = document.getElementById('item-produto');
-            const areaSabores = document.getElementById('area-adicionar-sabor');
-            
-            console.log('Marca selecionada:', marca);
-            
-            // Resetar select de produto
-            selectProduto.innerHTML = '<option value="">Selecione o produto...</option>';
-            
-            // Ocultar área de sabores e limpar tabela
-            if (areaSabores) {
-                areaSabores.classList.add('hidden');
-                const tbody = document.getElementById('tbody-sabores-lista');
-                if (tbody) tbody.innerHTML = '';
-            }
-            
-            if (!marca) {
-                selectProduto.disabled = true;
+        // Salvar item do pedido
+        async function salvarItem() {
+            const produtoId = document.getElementById('item-produto').value;
+            const quantidade = parseFloat(document.getElementById('item-quantidade').value) || 0;
+            const precoUnitario = parseFloat(document.getElementById('item-preco').value) || 0;
+
+            if (!produtoId) {
+                showToast('Selecione um produto', 'warning');
                 return;
             }
-            
+
+            if (quantidade <= 0) {
+                showToast('Informe uma quantidade válida', 'warning');
+                return;
+            }
+
+            if (precoUnitario <= 0) {
+                showToast('Informe um preço válido', 'warning');
+                return;
+            }
+
             try {
                 showLoading(true);
-                const produtos = await getProdutosPorMarca(marca);
-                console.log('Produtos encontrados:', produtos);
-                
-                if (produtos.length === 0) {
-                    showToast('Nenhum produto encontrado para esta marca', 'warning');
-                    selectProduto.disabled = true;
-                    return;
-                }
-                
-                produtos.forEach(p => {
-                    const precoCompra = p.preco_compra || p.preco || 0;
-                    const option = document.createElement('option');
-                    option.value = p.id;
-                    option.textContent = `${p.nome}`;
-                    option.dataset.preco = precoCompra;
-                    selectProduto.appendChild(option);
-                });
-                
-                selectProduto.disabled = false;
-                console.log('Select produto habilitado');
-            } catch (error) {
-                console.error('Erro ao carregar produtos:', error);
-                showToast('Erro ao carregar produtos', 'error');
-                selectProduto.disabled = true;
-            } finally {
-                showLoading(false);
-            }
-        }
+                const { data, error } = await supabase
+                    .from('pedido_itens')
+                    .insert([{
+                        pedido_id: pedidoId,
+                        produto_id: produtoId,
+                        quantidade: quantidade,
+                        preco_unitario: precoUnitario
+                    }]);
 
-        // Carregar sabores ao selecionar produto
-        async function carregarSaboresProduto() {
-            const produtoId = document.getElementById('item-produto').value;
-            const areaAdicionar = document.getElementById('area-adicionar-sabor');
-            
-            if (!produtoId) {
-                areaAdicionar.classList.add('hidden');
-                return;
-            }
-            
-            // Pegar dados do produto selecionado
-            const selectProduto = document.getElementById('item-produto');
-            const option = selectProduto.options[selectProduto.selectedIndex];
-            produtoAtual = {
-                id: produtoId,
-                nome: option.textContent,
-                preco: parseFloat(option.dataset.preco || 0)
-            };
-            
-            const sabores = await getSaboresProduto(produtoId);
-            if (sabores.length === 0) {
-                showToast('Este produto não possui sabores cadastrados', 'warning');
-                areaAdicionar.classList.add('hidden');
-                return;
-            }
-            
-            // Ordenar sabores alfabeticamente
-            sabores.sort((a, b) => a.sabor.localeCompare(b.sabor));
-            
-            // Renderizar lista de sabores
-            renderListaSabores(sabores);
-            
-            // Mostrar área e botão de salvar
-            areaAdicionar.classList.remove('hidden');
-            document.getElementById('btn-salvar-todos').classList.remove('hidden');
-        }
+                if (error) throw error;
 
-        // Renderizar lista de sabores com campos de quantidade
-        function renderListaSabores(sabores) {
-            const tbody = document.getElementById('tbody-sabores-lista');
-            
-            tbody.innerHTML = sabores.map(s => `
-                <tr class="border-t hover:bg-gray-50">
-                    <td class="px-3 py-3 font-medium">${s.sabor}</td>
-                    <td class="px-3 py-3 text-gray-600">${s.quantidade} UN</td>
-                    <td class="px-3 py-3">
-                        <input type="number" 
-                            step="1" 
-                            min="0" 
-                            value="0"
-                            data-sabor-id="${s.id}"
-                            data-sabor-nome="${s.sabor}"
-                            class="sabor-quantidade w-24 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" 
-                            placeholder="0"
-                            oninput="calcularTotalCompra()">
-                    </td>
-                    <td class="px-3 py-3">
-                        <input type="number" 
-                            step="0.01" 
-                            min="0.01" 
-                            value="${produtoAtual.preco.toFixed(2)}"
-                            data-sabor-id="${s.id}"
-                            class="sabor-preco w-24 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" 
-                            placeholder="0.00"
-                            oninput="calcularTotalCompra()">
-                    </td>
-                    <td class="px-3 py-3">
-                        <span class="sabor-subtotal font-medium text-gray-900" data-sabor-id="${s.id}">R$ 0,00</span>
-                    </td>
-                </tr>
-            `).join('');
-            
-            calcularTotalCompra();
-        }
-
-        // Calcular total da compra
-        function calcularTotalCompra() {
-            let total = 0;
-            
-            const quantidadeInputs = document.querySelectorAll('.sabor-quantidade');
-            quantidadeInputs.forEach(input => {
-                const saborId = input.dataset.saborId;
-                const quantidade = parseFloat(input.value) || 0;
-                const precoInput = document.querySelector(`.sabor-preco[data-sabor-id="${saborId}"]`);
-                const preco = parseFloat(precoInput.value) || 0;
-                const subtotal = quantidade * preco;
-                
-                // Atualizar subtotal do sabor
-                const subtotalSpan = document.querySelector(`.sabor-subtotal[data-sabor-id="${saborId}"]`);
-                subtotalSpan.textContent = formatCurrency(subtotal);
-                
-                total += subtotal;
-            });
-            
-            document.getElementById('total-compra').textContent = formatCurrency(total);
-        }
-
-        // Atualizar estoque quando selecionar sabor (não usado mais)
-        function atualizarEstoqueSabor() {
-            // Função mantida para compatibilidade mas não é mais usada
-        }
-
-        // Adicionar sabor na lista temporária (não usado mais)
-        function adicionarSaborNaLista() {
-            // Função mantida para compatibilidade mas não é mais usada
-        }
-        
-        // Renderizar lista de sabores temporários (não usado mais)
-        function renderSaboresTemporarios() {
-            // Função mantida para compatibilidade mas não é mais usada
-        }
-        
-        // Remover sabor da lista temporária (não usado mais)
-        function removerSaborTemporario(index) {
-            // Função mantida para compatibilidade mas não é mais usada
-        }
-        
-        // Salvar todos os sabores de uma vez
-        async function salvarTodosSabores() {
-            showLoading(true);
-            try {
-                // Coletar todos os sabores com quantidade > 0
-                const quantidadeInputs = document.querySelectorAll('.sabor-quantidade');
-                const saboresParaSalvar = [];
-                
-                quantidadeInputs.forEach(input => {
-                    const quantidade = parseFloat(input.value) || 0;
-                    if (quantidade > 0) {
-                        const saborId = input.dataset.saborId;
-                        const saborNome = input.dataset.saborNome;
-                        const precoInput = document.querySelector(`.sabor-preco[data-sabor-id="${saborId}"]`);
-                        const preco = parseFloat(precoInput.value) || 0;
-                        
-                        if (preco > 0) {
-                            saboresParaSalvar.push({
-                                sabor_id: saborId,
-                                sabor_nome: saborNome,
-                                quantidade: quantidade,
-                                preco_unitario: preco
-                            });
-                        }
-                    }
-                });
-                
-                if (saboresParaSalvar.length === 0) {
-                    showToast('Informe a quantidade e preço para pelo menos um sabor', 'warning');
-                    showLoading(false);
-                    return;
-                }
-                
-                // Salvar cada sabor
-                for (const sabor of saboresParaSalvar) {
-                    const itemData = {
-                        produto_id: produtoAtual.id,
-                        sabor_id: sabor.sabor_id,
-                        quantidade: sabor.quantidade,
-                        preco_unitario: sabor.preco_unitario
-                    };
-                    
-                    const result = await addItemPedido(pedidoId, itemData);
-                    if (!result) {
-                        throw new Error('Erro ao adicionar item');
-                    }
-                }
-                
-                showToast(`${saboresParaSalvar.length} sabor(es) adicionado(s) com sucesso!`, 'success');
-                
-                // Resetar modal
-                cancelarEFecharModal();
-                
-                // Recarregar pedido
+                showToast('Item adicionado com sucesso!', 'success');
+                closeModal('modal-item');
+                document.getElementById('item-produto').value = '';
+                document.getElementById('item-quantidade').value = '';
+                document.getElementById('item-preco').value = '';
                 await loadPedido();
             } catch (error) {
-                handleError(error, 'Erro ao salvar sabores');
+                handleError(error, 'Erro ao adicionar item');
             } finally {
                 showLoading(false);
             }
         }
-        
-        // Cancelar e fechar modal
+
         function cancelarEFecharModal() {
-            saboresTemporarios = [];
-            produtoAtual = null;
-            document.getElementById('item-marca').value = '';
-            document.getElementById('item-produto').value = '';
-            document.getElementById('item-produto').disabled = true;
-            document.getElementById('item-produto').innerHTML = '<option value="">Selecione o produto...</option>';
-            document.getElementById('tbody-sabores-lista').innerHTML = '';
-            document.getElementById('total-compra').textContent = 'R$ 0,00';
-            document.getElementById('area-adicionar-sabor').classList.add('hidden');
-            document.getElementById('btn-salvar-todos').classList.add('hidden');
             closeModal('modal-item');
+            document.getElementById('item-produto').value = '';
+            document.getElementById('item-quantidade').value = '';
+            document.getElementById('item-preco').value = '';
         }
 
+        function cancelarEFecharModal() {
+            closeModal('modal-item');
+            document.getElementById('item-produto').value = '';
+            document.getElementById('item-quantidade').value = '';
+            document.getElementById('item-preco').value = '';
+        }
+
+        // ======== CARREGAR DADOS DO PEDIDO ========
         async function loadPedido() {
             pedido = await getPedido(pedidoId);
             if (!pedido) return;
@@ -713,44 +506,26 @@
                     // Buscar itens do pedido
                     const itensPedido = await getItensPedido(pedidoId);
                     
-                    // Reverter movimentação de estoque
+                    // Reverter movimentação de estoque para cada item
                     for (const item of itensPedido) {
-                        if (item.sabor_id) {
-                            // COMPRA finalizada: tinha ADICIONADO estoque, agora precisa REMOVER
-                            // Usar quantidade negativa para remover
-                            const { error: estoqueError } = await supabase
-                                .rpc('atualizar_estoque_sabor', {
-                                    p_sabor_id: item.sabor_id,
-                                    p_quantidade: -item.quantidade  // NEGATIVO para remover
-                                });
-                            
-                            if (estoqueError) {
-                                console.error('Erro ao reverter estoque:', estoqueError);
-                                throw estoqueError;
-                            }
-                            
-                            // Registrar movimentação de ajuste
-                            const { data: saborAtual } = await supabase
-                                .from('produto_sabores')
-                                .select('quantidade')
-                                .eq('id', item.sabor_id)
-                                .single();
-                            
-                            await supabase
-                                .from('estoque_movimentacoes')
-                                .insert({
-                                    produto_id: item.produto_id,
-                                    sabor_id: item.sabor_id,
-                                    tipo: 'SAIDA',
-                                    quantidade: item.quantidade,
-                                    estoque_anterior: saborAtual.quantidade + item.quantidade,
-                                    estoque_novo: saborAtual.quantidade,
-                                    usuario_id: currentUser.id,
-                                    pedido_id: pedidoId,
-                                    observacao: novoStatus === 'CANCELADO' 
-                                        ? 'Ajuste - Cancelamento definitivo de compra'
-                                        : 'Ajuste - Reabertura de compra como rascunho'
-                                });
+                        const tipoReverso = pedido.tipo_pedido === 'COMPRA' ? 'SAIDA' : 'ENTRADA';
+                        const observacao = novoStatus === 'CANCELADO' 
+                            ? `Ajuste - Cancelamento definitivo de ${pedido.tipo_pedido.toLowerCase()}`
+                            : `Ajuste - Reabertura de ${pedido.tipo_pedido.toLowerCase()} como rascunho`;
+                        
+                        // Chamar função de movimentação de estoque
+                        const { error: estoqueError } = await supabase.rpc('processar_movimentacao_estoque', {
+                            p_produto_id: item.produto_id,
+                            p_tipo: tipoReverso,
+                            p_quantidade: item.quantidade,
+                            p_usuario_id: currentUser.id,
+                            p_pedido_id: pedidoId,
+                            p_observacao: observacao
+                        });
+                        
+                        if (estoqueError) {
+                            console.error('Erro ao reverter estoque:', estoqueError);
+                            throw estoqueError;
                         }
                     }
                 }

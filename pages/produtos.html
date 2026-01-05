@@ -81,16 +81,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Produto*</label>
-                        <input type="text" id="produto-nome" required class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Ex: V250">
+                        <input type="text" id="produto-nome" required class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Ex: Caneta Azul">
                         <p class="text-xs text-gray-500 mt-1">O código será gerado automaticamente</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Marca*</label>
-                        <input type="text" id="produto-marca" required class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Ex: IGNITE">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+                        <input type="text" id="produto-descricao" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Descrição do produto">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
-                        <input type="text" id="produto-categoria" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Ex: Bebidas">
+                        <input type="text" id="produto-categoria" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Ex: Escritório">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Unidade*</label>
@@ -129,20 +129,6 @@
                     </div>
                 </div>
 
-                <!-- Sabores -->
-                <div class="border-t pt-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="text-md font-semibold text-gray-700">Sabores</h4>
-                        <button type="button" onclick="adicionarSabor()" class="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
-                            + Adicionar Sabor
-                        </button>
-                    </div>
-                    <div id="sabores-container" class="space-y-2">
-                        <!-- Sabores serão adicionados aqui dinamicamente -->
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">* Adicione os sabores disponíveis para este produto. O estoque será controlado individualmente por sabor.</p>
-                </div>
-
                 <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
                     <button type="button" onclick="closeModal('modal-produto')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar Produto</button>
@@ -166,7 +152,6 @@
     
     <script>
         let editingId = null;
-        let saboresCount = 0;
 
         (async () => {
             await checkAuth();
@@ -177,82 +162,6 @@
             await loadProdutos();
             await loadCategorias();
         })();
-
-        // Gerenciamento de Sabores
-        function adicionarSabor(sabor = '', quantidade = 0, saborId = null) {
-            saboresCount++;
-            const container = document.getElementById('sabores-container');
-            const div = document.createElement('div');
-            div.className = 'flex gap-2 items-center bg-gray-50 p-3 rounded-lg';
-            div.id = `sabor-${saboresCount}`;
-            div.innerHTML = `
-                <input type="hidden" name="sabor-id-${saboresCount}" value="${saborId || ''}">
-                <div class="flex-1">
-                    <input 
-                        type="text" 
-                        name="sabor-nome-${saboresCount}" 
-                        value="${sabor}" 
-                        placeholder="Nome do sabor (ex: MELANCIA)" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm sabor-input"
-                        required
-                    >
-                </div>
-                <div class="w-32">
-                    <input 
-                        type="number" 
-                        name="sabor-qtd-${saboresCount}" 
-                        value="${quantidade}" 
-                        placeholder="Qtd" 
-                        step="1"
-                        min="0"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                    >
-                </div>
-                <button 
-                    type="button" 
-                    onclick="removerSabor(${saboresCount})" 
-                    class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
-                >
-                    ✕
-                </button>
-            `;
-            container.appendChild(div);
-        }
-
-        function removerSabor(id) {
-            const elemento = document.getElementById(`sabor-${id}`);
-            if (elemento) {
-                elemento.remove();
-            }
-        }
-
-        function limparSabores() {
-            document.getElementById('sabores-container').innerHTML = '';
-            saboresCount = 0;
-        }
-
-        function coletarSabores() {
-            const sabores = [];
-            const container = document.getElementById('sabores-container');
-            const inputs = container.querySelectorAll('[name^="sabor-nome-"]');
-            
-            inputs.forEach(input => {
-                const num = input.name.split('-')[2];
-                const saborId = document.querySelector(`[name="sabor-id-${num}"]`).value || null;
-                const nome = input.value.trim().toUpperCase();
-                const qtd = parseFloat(document.querySelector(`[name="sabor-qtd-${num}"]`).value) || 0;
-                
-                if (nome) {
-                    sabores.push({
-                        id: saborId,
-                        sabor: nome,
-                        quantidade: qtd
-                    });
-                }
-            });
-            
-            return sabores;
-        }
 
         async function loadCategorias() {
             const categorias = await getCategorias();
@@ -281,7 +190,7 @@
                     <td class="px-6 py-4 text-sm text-gray-900">${p.codigo}</td>
                     <td class="px-6 py-4">
                         <div class="text-sm font-medium text-gray-900">${p.nome}</div>
-                        ${p.marca ? `<div class="text-xs text-gray-500">Marca: ${p.marca}</div>` : ''}
+                        ${p.descricao ? `<div class="text-xs text-gray-500">${p.descricao}</div>` : ''}
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600">${p.categoria || '-'}</td>
                     <td class="px-6 py-4 text-sm ${p.estoque_atual <= p.estoque_minimo ? 'text-red-600 font-semibold' : 'text-gray-900'}">
@@ -306,34 +215,30 @@
             const precoCompra = parseFloat(document.getElementById('produto-preco-compra').value) || 0;
             const precoVenda = parseFloat(document.getElementById('produto-preco-venda').value) || 0;
             
-            // Validar e formatar nome e marca
-            let nome = document.getElementById('produto-nome').value.trim().toUpperCase();
-            let marca = document.getElementById('produto-marca').value.trim().toUpperCase();
+            // Validar e formatar nome
+            const nome = document.getElementById('produto-nome').value.trim().toUpperCase();
+            const categoria = document.getElementById('produto-categoria').value.trim() || null;
             
             const produto = {
-                // Código será gerado automaticamente
                 nome: nome,
-                marca: marca,
-                categoria: document.getElementById('produto-categoria').value.trim() || null,
+                descricao: document.getElementById('produto-descricao').value.trim() || null,
+                categoria: categoria,
                 unidade: document.getElementById('produto-unidade').value,
                 estoque_minimo: parseFloat(document.getElementById('produto-estoque-minimo').value),
                 preco_compra: precoCompra,
-                preco_venda: precoVenda,
-                preco: precoVenda // Manter compatibilidade
+                preco_venda: precoVenda
             };
 
-            // Coletar sabores
-            const sabores = coletarSabores();
-
             if (editingId) {
-                await updateProdutoComSabores(editingId, produto, sabores);
+                await updateProduto(editingId, produto);
             } else {
-                await createProdutoComSabores(produto, sabores);
+                // Gerar código automaticamente para novos produtos
+                produto.codigo = await generateProductCode(categoria);
+                await createProduto(produto);
             }
 
             closeModal('modal-produto');
             document.getElementById('form-produto').reset();
-            limparSabores();
             editingId = null;
             await loadProdutos();
         });
@@ -344,21 +249,13 @@
 
             editingId = id;
             document.getElementById('modal-title').textContent = 'Editar Produto';
-            // Código não é editável - gerado automaticamente
             document.getElementById('produto-nome').value = produto.nome;
-            document.getElementById('produto-marca').value = produto.marca || '';
+            document.getElementById('produto-descricao').value = produto.descricao || '';
             document.getElementById('produto-categoria').value = produto.categoria || '';
             document.getElementById('produto-unidade').value = produto.unidade;
             document.getElementById('produto-estoque-minimo').value = produto.estoque_minimo;
-            document.getElementById('produto-preco-compra').value = produto.preco_compra || produto.preco || 0;
-            document.getElementById('produto-preco-venda').value = produto.preco_venda || produto.preco || 0;
-            
-            // Carregar sabores
-            limparSabores();
-            const sabores = await getSaboresProduto(id);
-            if (sabores && sabores.length > 0) {
-                sabores.forEach(s => adicionarSabor(s.sabor, s.quantidade, s.id));
-            }
+            document.getElementById('produto-preco-compra').value = produto.preco_compra || 0;
+            document.getElementById('produto-preco-venda').value = produto.preco_venda || 0;
             
             calcularMargem();
             openModal('modal-produto');
@@ -402,26 +299,11 @@
         // Adicionar listener no preço de compra também
         document.getElementById('produto-preco-compra').addEventListener('input', calcularMargem);
 
-        // Converter nome e marca para maiúsculas em tempo real
+        // Converter nome para maiúsculas em tempo real
         document.getElementById('produto-nome').addEventListener('input', function(e) {
             const cursorPos = e.target.selectionStart;
             e.target.value = e.target.value.toUpperCase();
             e.target.setSelectionRange(cursorPos, cursorPos);
-        });
-        
-        document.getElementById('produto-marca').addEventListener('input', function(e) {
-            const cursorPos = e.target.selectionStart;
-            e.target.value = e.target.value.toUpperCase();
-            e.target.setSelectionRange(cursorPos, cursorPos);
-        });
-
-        // Converter sabores para maiúsculas em tempo real (delegação de eventos)
-        document.getElementById('sabores-container').addEventListener('input', function(e) {
-            if (e.target.classList.contains('sabor-input')) {
-                const cursorPos = e.target.selectionStart;
-                e.target.value = e.target.value.toUpperCase();
-                e.target.setSelectionRange(cursorPos, cursorPos);
-            }
         });
 
         document.getElementById('search').addEventListener('input', debounce(loadProdutos, 500));

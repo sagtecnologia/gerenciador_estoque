@@ -74,8 +74,7 @@ async function getItensPedido(pedidoId) {
             .from('pedido_itens')
             .select(`
                 *,
-                produto:produtos(codigo, nome, unidade, preco),
-                sabor:produto_sabores(id, sabor, quantidade)
+                produto:produtos(codigo, nome, unidade, preco_compra, preco_venda)
             `)
             .eq('pedido_id', pedidoId)
             .order('created_at');
@@ -143,11 +142,6 @@ async function addItemPedido(pedidoId, item) {
             quantidade: item.quantidade,
             preco_unitario: item.preco_unitario
         };
-
-        // Incluir sabor_id se fornecido
-        if (item.sabor_id) {
-            itemData.sabor_id = item.sabor_id;
-        }
 
         const { data, error } = await supabase
             .from('pedido_itens')

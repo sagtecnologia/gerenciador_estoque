@@ -31,13 +31,13 @@ CREATE TABLE IF NOT EXISTS produtos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     codigo VARCHAR(50) UNIQUE NOT NULL,
     nome VARCHAR(255) NOT NULL,
+    descricao TEXT,
     categoria VARCHAR(100),
     unidade VARCHAR(20) NOT NULL,
     estoque_atual DECIMAL(10,2) DEFAULT 0,
     estoque_minimo DECIMAL(10,2) DEFAULT 0,
     preco_compra DECIMAL(10,2) DEFAULT 0,
     preco_venda DECIMAL(10,2) DEFAULT 0,
-    preco DECIMAL(10,2) DEFAULT 0, -- Manter para compatibilidade (será igual a preco_venda)
     active BOOLEAN DEFAULT true,
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS estoque_movimentacoes (
     quantidade DECIMAL(10,2) NOT NULL,
     estoque_anterior DECIMAL(10,2) NOT NULL,
     estoque_novo DECIMAL(10,2) NOT NULL,
-    pedido_id UUID REFERENCES pedidos(id),
+    pedido_id UUID REFERENCES pedidos(id) ON DELETE SET NULL,
     usuario_id UUID REFERENCES users(id) NOT NULL,
     observacao TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -271,28 +271,43 @@ RETURNS BOOLEAN AS $$
 DECLARE
     v_item RECORD;
     v_status VARCHAR;
+    v_tipo_pedido VARCHAR;
 BEGIN
-    -- Verificar status do pedido
-    SELECT status INTO v_status FROM pedidos WHERE id = p_pedido_id;
+    -- Buscar informações do pedido
+    SELECT status, tipo_pedido INTO v_status, v_tipo_pedido FROM pedidos WHERE id = p_pedido_id;
     
-    IF v_status != 'APROVADO' THEN
-        RAISE EXCEPTION 'Apenas pedidos aprovados podem ser finalizados';
+    -- Não permitir finalizar pedidos já finalizados
+    IF v_status = 'FINALIZADO' THEN
+        RAISE EXCEPTION 'Este pedido já foi finalizado';
     END IF;
 
-    -- Processar baixa de cada item
+    -- Processar movimentação de estoque baseado no tipo de pedido
     FOR v_item IN 
         SELECT produto_id, quantidade 
         FROM pedido_itens 
         WHERE pedido_id = p_pedido_id
     LOOP
-        PERFORM processar_movimentacao_estoque(
-            v_item.produto_id,
-            'SAIDA',
-            v_item.quantidade,
-            p_usuario_id,
-            p_pedido_id,
-            'Baixa automática - Finalização de pedido'
-        );
+        IF v_tipo_pedido = 'COMPRA' THEN
+            -- Pedido de compra: ENTRADA no estoque
+            PERFORM processar_movimentacao_estoque(
+                v_item.produto_id,
+                'ENTRADA',
+                v_item.quantidade,
+                p_usuario_id,
+                p_pedido_id,
+                'Entrada automática - Finalização de pedido de compra'
+            );
+        ELSE
+            -- Pedido de venda: SAÍDA do estoque
+            PERFORM processar_movimentacao_estoque(
+                v_item.produto_id,
+                'SAIDA',
+                v_item.quantidade,
+                p_usuario_id,
+                p_pedido_id,
+                'Baixa automática - Finalização de pedido de venda'
+            );
+        END IF;
     END LOOP;
 
     -- Atualizar status do pedido
@@ -303,7 +318,11 @@ BEGIN
 
     RETURN TRUE;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Garantir permissões de execução das funções
+GRANT EXECUTE ON FUNCTION finalizar_pedido(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION processar_movimentacao_estoque(UUID, VARCHAR, NUMERIC, UUID, UUID, TEXT) TO authenticated;
 
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS)
@@ -539,6 +558,33 @@ CREATE POLICY "ADMIN pode finalizar pedidos"
             SELECT 1 FROM users 
             WHERE id = auth.uid() AND role = 'ADMIN'
         ) AND status = 'APROVADO'
+    );
+
+-- ADMIN pode cancelar/reabrir qualquer pedido
+CREATE POLICY "ADMIN pode cancelar ou reabrir pedidos"
+    ON pedidos FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE id = auth.uid() AND role = 'ADMIN'
+        )
+    );
+
+-- Solicitante pode excluir seus próprios pedidos em RASCUNHO
+CREATE POLICY "Solicitante pode excluir pedidos em RASCUNHO"
+    ON pedidos FOR DELETE
+    USING (
+        solicitante_id = auth.uid() AND status = 'RASCUNHO'
+    );
+
+-- ADMIN pode excluir qualquer pedido em RASCUNHO
+CREATE POLICY "ADMIN pode excluir pedidos em RASCUNHO"
+    ON pedidos FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE id = auth.uid() AND role = 'ADMIN'
+        ) AND status = 'RASCUNHO'
     );
 
 -- =====================================================
