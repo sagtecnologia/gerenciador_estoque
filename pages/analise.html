@@ -384,6 +384,8 @@
         let vendasFinalizadas = [];
         let comprasFinalizadas = [];
         let todosProdutos = [];
+        let custoMedioProduto = {};
+        let custoMedioSabor = {};
         let filtroAtual = {
             marca: '',
             produto: '',
@@ -391,6 +393,57 @@
             dataInicio: '',
             dataFim: ''
         };
+        
+        // Função auxiliar para calcular custo médio real das compras
+        function calcularCustosMedios() {
+            const custoPorProduto = {};
+            const custoPorSabor = {};
+            
+            comprasFinalizadas.forEach(compra => {
+                compra.itens.forEach(item => {
+                    const precoCompra = parseFloat(item.preco_unitario) || 0;
+                    
+                    // Custo por produto
+                    if (!custoPorProduto[item.produto_id]) {
+                        custoPorProduto[item.produto_id] = { totalCusto: 0, totalQtd: 0 };
+                    }
+                    custoPorProduto[item.produto_id].totalCusto += precoCompra * item.quantidade;
+                    custoPorProduto[item.produto_id].totalQtd += parseFloat(item.quantidade) || 0;
+                    
+                    // Custo por sabor
+                    if (item.sabor_id) {
+                        const saborKey = `${item.produto_id}-${item.sabor_id}`;
+                        if (!custoPorSabor[saborKey]) {
+                            custoPorSabor[saborKey] = { totalCusto: 0, totalQtd: 0 };
+                        }
+                        custoPorSabor[saborKey].totalCusto += precoCompra * item.quantidade;
+                        custoPorSabor[saborKey].totalQtd += parseFloat(item.quantidade) || 0;
+                    }
+                });
+            });
+            
+            // Calcular médias
+            custoMedioProduto = {};
+            Object.keys(custoPorProduto).forEach(produtoId => {
+                const dados = custoPorProduto[produtoId];
+                custoMedioProduto[produtoId] = dados.totalQtd > 0 ? dados.totalCusto / dados.totalQtd : 0;
+            });
+            
+            custoMedioSabor = {};
+            Object.keys(custoPorSabor).forEach(saborKey => {
+                const dados = custoPorSabor[saborKey];
+                custoMedioSabor[saborKey] = dados.totalQtd > 0 ? dados.totalCusto / dados.totalQtd : 0;
+            });
+        }
+        
+        // Função auxiliar para obter custo de um item
+        function obterCustoItem(item, produto) {
+            if (item.sabor_id) {
+                const saborKey = `${item.produto_id}-${item.sabor_id}`;
+                return custoMedioSabor[saborKey] || custoMedioProduto[item.produto_id] || parseFloat(produto?.preco_compra) || 0;
+            }
+            return custoMedioProduto[item.produto_id] || parseFloat(produto?.preco_compra) || 0;
+        }
 
         (async () => {
             await checkAuth();
@@ -438,7 +491,7 @@
                 return;
             }
             
-            const produtos = todosProdutos.filter(p => p.marca === marca);
+            const produtos = todosProdutos.filter(p => p.categoria === marca);
             produtos.forEach(p => {
                 const option = document.createElement('option');
                 option.value = p.id;
@@ -548,6 +601,9 @@
                     return { ...p, itens };
                 }));
                 
+                // Calcular custos médios baseados nas compras
+                calcularCustosMedios();
+                
                 calcularResumo();
                 renderizarTabAtiva();
             } catch (error) {
@@ -566,20 +622,38 @@
             vendas.forEach(venda => {
                 venda.itens.forEach(item => {
                     const produto = todosProdutos.find(p => p.id === item.produto_id);
-                    if (!produto) return;
+                    if (!produto) {
+                        console.warn('Produto não encontrado:', item.produto_id);
+                        return;
+                    }
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
-                    receitaTotal += item.preco_unitario * item.quantidade;
-                    custoTotal += (produto.preco_compra || 0) * item.quantidade;
+                    const precoVenda = parseFloat(item.preco_unitario) || 0;
+                    const quantidade = parseFloat(item.quantidade) || 0;
+                    const precoCompra = obterCustoItem(item, produto);
+                    
+                    receitaTotal += precoVenda * quantidade;
+                    custoTotal += precoCompra * quantidade;
+                    
+                    if (precoCompra === 0) {
+                        console.warn(`Produto ${produto.nome} sem custo de compra registrado`);
+                    }
                 });
             });
             
             const lucroTotal = receitaTotal - custoTotal;
             const margemMedia = receitaTotal > 0 ? (lucroTotal / receitaTotal * 100) : 0;
+            
+            console.log('Resumo:', { 
+                receitaTotal, 
+                custoTotal, 
+                lucroTotal, 
+                margemMedia: margemMedia.toFixed(1) + '%'
+            });
             
             document.getElementById('card-receita').textContent = formatCurrency(receitaTotal);
             document.getElementById('card-custo').textContent = formatCurrency(custoTotal);
@@ -654,18 +728,18 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
-                    const marca = produto.marca || 'SEM MARCA';
+                    const marca = produto.categoria || 'SEM MARCA';
                     if (!lucrosPorMarca[marca]) {
                         lucrosPorMarca[marca] = { quantidade: 0, receita: 0, custo: 0 };
                     }
                     
                     lucrosPorMarca[marca].quantidade += item.quantidade;
                     lucrosPorMarca[marca].receita += item.preco_unitario * item.quantidade;
-                    lucrosPorMarca[marca].custo += (produto.preco_compra || 0) * item.quantidade;
+                    lucrosPorMarca[marca].custo += obterCustoItem(item, produto) * item.quantidade;
                 });
             });
             
@@ -707,13 +781,13 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     
                     const key = produto.id;
                     if (!lucrosPorProduto[key]) {
                         lucrosPorProduto[key] = { 
-                            marca: produto.marca,
+                            marca: produto.categoria,
                             produto: produto.nome,
                             quantidade: 0, 
                             receita: 0, 
@@ -723,7 +797,7 @@
                     
                     lucrosPorProduto[key].quantidade += item.quantidade;
                     lucrosPorProduto[key].receita += item.preco_unitario * item.quantidade;
-                    lucrosPorProduto[key].custo += (produto.preco_compra || 0) * item.quantidade;
+                    lucrosPorProduto[key].custo += obterCustoItem(item, produto) * item.quantidade;
                 });
             });
             
@@ -762,14 +836,14 @@
                     if (!produto || !item.sabor_id) continue;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) continue;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) continue;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) continue;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) continue;
                     
                     const key = `${produto.id}-${item.sabor_id}`;
                     if (!lucrosPorSabor[key]) {
                         lucrosPorSabor[key] = {
-                            marca: produto.marca,
+                            marca: produto.categoria,
                             produto: produto.nome,
                             sabor: item.sabor?.sabor || 'Carregando...',
                             quantidade: 0,
@@ -780,7 +854,7 @@
                     
                     lucrosPorSabor[key].quantidade += item.quantidade;
                     lucrosPorSabor[key].receita += item.preco_unitario * item.quantidade;
-                    lucrosPorSabor[key].custo += (produto.preco_compra || 0) * item.quantidade;
+                    lucrosPorSabor[key].custo += obterCustoItem(item, produto) * item.quantidade;
                 }
             }
             
@@ -821,11 +895,11 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
-                    const custoUnitario = produto.preco_compra || 0;
+                    const custoUnitario = obterCustoItem(item, produto);
                     const lucroUnitario = item.preco_unitario - custoUnitario;
                     const lucroTotal = lucroUnitario * item.quantidade;
                     
@@ -992,7 +1066,7 @@
                 venda.itens.forEach(item => {
                     const produto = todosProdutos.find(p => p.id === item.produto_id);
                     if (!produto) return;
-                    const marca = produto.marca || 'SEM MARCA';
+                    const marca = produto.categoria || 'SEM MARCA';
                     if (!vendasPorMarca[marca]) vendasPorMarca[marca] = 0;
                     vendasPorMarca[marca] += item.preco_unitario * item.quantidade;
                 });
@@ -1036,14 +1110,14 @@
                     const produto = todosProdutos.find(p => p.id === item.produto_id);
                     if (!produto) return;
                     
-                    const marca = produto.marca || 'SEM MARCA';
+                    const marca = produto.categoria || 'SEM MARCA';
                     if (!lucrosPorMarca[marca]) {
                         lucrosPorMarca[marca] = { quantidade: 0, receita: 0, custo: 0 };
                     }
                     
                     lucrosPorMarca[marca].quantidade += item.quantidade;
                     lucrosPorMarca[marca].receita += item.preco_unitario * item.quantidade;
-                    lucrosPorMarca[marca].custo += (produto.preco_compra || 0) * item.quantidade;
+                    lucrosPorMarca[marca].custo += obterCustoItem(item, produto) * item.quantidade;
                 });
             });
             
@@ -1073,13 +1147,13 @@
                 venda.itens.forEach(item => {
                     const produto = todosProdutos.find(p => p.id === item.produto_id);
                     if (!produto) return;
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     
                     const key = produto.id;
                     if (!lucrosPorProduto[key]) {
                         lucrosPorProduto[key] = { 
-                            marca: produto.marca,
+                            marca: produto.categoria,
                             produto: produto.nome,
                             quantidade: 0, 
                             receita: 0, 
@@ -1089,7 +1163,7 @@
                     
                     lucrosPorProduto[key].quantidade += item.quantidade;
                     lucrosPorProduto[key].receita += item.preco_unitario * item.quantidade;
-                    lucrosPorProduto[key].custo += (produto.preco_compra || 0) * item.quantidade;
+                    lucrosPorProduto[key].custo += obterCustoItem(item, produto) * item.quantidade;
                 });
             });
             
@@ -1120,14 +1194,14 @@
                 venda.itens.forEach(item => {
                     const produto = todosProdutos.find(p => p.id === item.produto_id);
                     if (!produto || !item.sabor_id) return;
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
                     const key = `${produto.id}-${item.sabor_id}`;
                     if (!lucrosPorSabor[key]) {
                         lucrosPorSabor[key] = {
-                            marca: produto.marca,
+                            marca: produto.categoria,
                             produto: produto.nome,
                             sabor: item.sabor?.sabor || '-',
                             quantidade: 0,
@@ -1138,7 +1212,7 @@
                     
                     lucrosPorSabor[key].quantidade += item.quantidade;
                     lucrosPorSabor[key].receita += item.preco_unitario * item.quantidade;
-                    lucrosPorSabor[key].custo += (produto.preco_compra || 0) * item.quantidade;
+                    lucrosPorSabor[key].custo += obterCustoItem(item, produto) * item.quantidade;
                 });
             });
             
@@ -1170,11 +1244,11 @@
                 venda.itens.forEach(item => {
                     const produto = todosProdutos.find(p => p.id === item.produto_id);
                     if (!produto) return;
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
-                    const custoUnitario = produto.preco_compra || 0;
+                    const custoUnitario = obterCustoItem(item, produto);
                     const lucroUnitario = item.preco_unitario - custoUnitario;
                     
                     linhas.push({
@@ -1304,7 +1378,7 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
@@ -1332,7 +1406,7 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
@@ -1562,7 +1636,7 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
@@ -1624,11 +1698,11 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
-                    const marca = produto.marca || 'SEM MARCA';
+                    const marca = produto.categoria || 'SEM MARCA';
                     if (!vendasPorMarca[marca]) {
                         vendasPorMarca[marca] = 0;
                     }
@@ -1694,7 +1768,7 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
@@ -1758,7 +1832,7 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
@@ -1812,7 +1886,7 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
@@ -1864,17 +1938,17 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
-                    const marca = produto.marca || 'SEM MARCA';
+                    const marca = produto.categoria || 'SEM MARCA';
                     if (!dadosPorMarca[marca]) {
                         dadosPorMarca[marca] = { receita: 0, custo: 0 };
                     }
                     
                     dadosPorMarca[marca].receita += item.preco_unitario * item.quantidade;
-                    dadosPorMarca[marca].custo += (produto.preco_compra || 0) * item.quantidade;
+                    dadosPorMarca[marca].custo += obterCustoItem(item, produto) * item.quantidade;
                 });
             });
 
@@ -1942,12 +2016,12 @@
                     if (!produto) return;
                     
                     // Aplicar filtros
-                    if (filtroAtual.marca && produto.marca !== filtroAtual.marca) return;
+                    if (filtroAtual.marca && produto.categoria !== filtroAtual.marca) return;
                     if (filtroAtual.produto && produto.id !== filtroAtual.produto) return;
                     if (filtroAtual.sabor && item.sabor_id !== filtroAtual.sabor) return;
                     
                     receitaDia += item.preco_unitario * item.quantidade;
-                    custoDia += (produto.preco_compra || 0) * item.quantidade;
+                    custoDia += obterCustoItem(item, produto) * item.quantidade;
                 });
                 
                 if (receitaDia > 0 || custoDia > 0) {

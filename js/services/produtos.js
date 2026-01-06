@@ -171,6 +171,66 @@ async function getCategorias() {
     }
 }
 
+// Listar marcas (usando categoria temporariamente até migração)
+async function getMarcas() {
+    try {
+        const { data, error } = await supabase
+            .from('produtos')
+            .select('categoria')
+            .eq('active', true)
+            .not('categoria', 'is', null);
+
+        if (error) throw error;
+
+        // Remover duplicatas
+        const marcas = [...new Set(data.map(p => p.categoria))];
+        return marcas.sort();
+        
+    } catch (error) {
+        handleError(error, 'Erro ao buscar marcas');
+        return [];
+    }
+}
+
+// Listar sabores de um produto
+async function getSaboresProduto(produtoId) {
+    try {
+        const { data, error } = await supabase
+            .from('produto_sabores')
+            .select('*')
+            .eq('produto_id', produtoId)
+            .eq('ativo', true)
+            .order('sabor');
+
+        if (error) throw error;
+        return data || [];
+        
+    } catch (error) {
+        handleError(error, 'Erro ao buscar sabores do produto');
+        return [];
+    }
+}
+
+// Listar todos os sabores
+async function getTodosSabores() {
+    try {
+        const { data, error } = await supabase
+            .from('produto_sabores')
+            .select('sabor')
+            .eq('ativo', true);
+
+        if (error) throw error;
+
+        // Remover duplicatas
+        const sabores = [...new Set(data.map(s => s.sabor))];
+        return sabores.sort();
+        
+    } catch (error) {
+        handleError(error, 'Erro ao buscar sabores');
+        return [];
+    }
+}
+
 // =====================================================
 // FUNÇÕES DE GERAÇÃO DE CÓDIGO
 // =====================================================

@@ -80,7 +80,24 @@ async function getItensPedido(pedidoId) {
             .order('created_at');
 
         if (error) throw error;
-        return data;
+        
+        // Buscar sabores separadamente para cada item que tem sabor_id
+        const itensComSabor = await Promise.all(data.map(async (item) => {
+            if (item.sabor_id) {
+                const { data: saborData, error: saborError } = await supabase
+                    .from('produto_sabores')
+                    .select('id, sabor')
+                    .eq('id', item.sabor_id)
+                    .single();
+                
+                if (!saborError && saborData) {
+                    return { ...item, sabor: saborData };
+                }
+            }
+            return { ...item, sabor: null };
+        }));
+        
+        return itensComSabor;
         
     } catch (error) {
         handleError(error, 'Erro ao buscar itens do pedido');
